@@ -65,17 +65,21 @@ class Stage {
   std::set<StageID> m_stages_dependencies;
 
   MinAvgMax_Times compute_minavgmax_times(
-      const std::vector<TimeInstant>& tasks_times) const noexcept;
+      const std::vector<TimeInstant>& tasks_times) const;
 };
 
 inline Stage::Stage(StageID stage_id, std::size_t number_of_tasks)
     : m_id_stage(std::move(stage_id)), m_number_of_tasks(number_of_tasks) {}
 
 inline Stage::MinAvgMax_Times Stage::compute_minavgmax_times(
-    const std::vector<TimeInstant>& tasks_times) const noexcept {
-  TimeInstant min = 0;
+    const std::vector<TimeInstant>& tasks_times) const {
+  if (tasks_times.empty()) {
+    THROW_RUNTIME_ERROR("Stage computing timing: the number of tasks is zero");
+  }
+
+  TimeInstant min = tasks_times.at(0);
   TimeInstant avg = 0;
-  TimeInstant max = 0;
+  TimeInstant max = tasks_times.at(0);
 
   for (const auto& task_time : tasks_times) {
     if (task_time < min) {

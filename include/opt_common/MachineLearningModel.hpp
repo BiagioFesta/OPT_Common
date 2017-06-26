@@ -47,6 +47,8 @@ class MachineLearningModel {
   void set_chi_0(double chi_0) { MachineLearningModel::chi_0 = chi_0; }
 
   void set_chi_c(double chi_c) { MachineLearningModel::chi_c = chi_c; }
+
+  void print_dump_on_stream(std::ostream* os);
 };
 
 inline void MachineLearningModel::print() const {
@@ -75,6 +77,11 @@ inline unsigned MachineLearningModel::initial_core_numbers(
             << "Initial cores number: " << n_cores << std::endl;
 
   return n_cores;
+}
+
+inline void MachineLearningModel::print_dump_on_stream(std::ostream* os) {
+  *os << '\n'
+      << chi_0 << " " << chi_c << '\n';
 }
 
 }  // namespace opt_common

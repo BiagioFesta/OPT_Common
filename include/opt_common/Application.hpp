@@ -376,6 +376,8 @@ inline Application Application::create_application(
   app.m_infr_config = ic;
   app.m_mlm = mlm;
 
+  app.m_mlm.print_dump_on_stream(&std::cout);
+
   return app;
 }
 
