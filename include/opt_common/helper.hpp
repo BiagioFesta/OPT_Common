@@ -22,6 +22,7 @@ limitations under the License.
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #define THROW_RUNTIME_ERROR(message) throw std::runtime_error(message)
 
@@ -32,13 +33,14 @@ using TimeInstant = std::uint64_t;
 using CSV_Line = std::vector<std::string>;
 using CSV_Data = std::vector<CSV_Line>;
 
-inline std::string get_dagsim_command(const std::string& lua_filename) {
+inline std::string get_dagsim_command(const std::string& lua_filename,
+                                      const std::string& dagsim_path) {
   std::string com;
-  std::ifstream ifs{"config.txt"};
-  ifs >> com >> com;
+
   // select the correct number from the output of Dagsim
-  com += "dagsim.sh " + lua_filename +
+  com += dagsim_path + "/dagsim.sh " + lua_filename +
          "_mod.lua 2>&1|sed -n 1,1p|awk '{print $3}' > result.txt";
+
   return com;
 }
 
@@ -107,6 +109,34 @@ inline std::vector<int> parse_string_as_vector_of_numbers(std::string str) {
   }
 
   return numbers;
+}
+
+template <typename T>
+typename std::vector<T>::difference_type compute_maxmin_get_index_impl(
+    const std::vector<T>& v, bool max) {
+  if (v.empty()) {
+    THROW_RUNTIME_ERROR("Computing maxmin: no elements");
+  }
+
+  typename std::vector<T>::const_iterator it;
+  if (max) {
+    it = std::max_element(v.cbegin(), v.cend());
+  } else {
+    it = std::min_element(v.cbegin(), v.cend());
+  }
+  assert(it != v.cend());
+
+  return std::distance(v.cbegin(), it);
+}
+
+template <typename T>
+typename std::vector<T>::difference_type compute_max_get_index(const std::vector<T>& v) {
+  return compute_maxmin_get_index_impl(v, true);
+}
+
+template <typename T>
+typename std::vector<T>::difference_type compute_min_get_index(const std::vector<T>& v) {
+  return compute_maxmin_get_index_impl(v, false);
 }
 
 }  // namespace opt_common

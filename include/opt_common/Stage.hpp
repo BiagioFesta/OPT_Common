@@ -34,7 +34,7 @@ class Stage {
   //! \return the stage identifier
   const StageID& get_stageID() const noexcept { return m_id_stage; }
 
-  //! \retunr the number of tasks in this stage
+  //! \return the number of tasks in this stage
   unsigned int get_number_of_tasks() const noexcept {
     return m_number_of_tasks;
   }

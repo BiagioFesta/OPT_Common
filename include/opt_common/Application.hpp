@@ -65,6 +65,31 @@ class Application {
     return m_infr_config;
   }
 
+  const auto& get_dagsim_path() const noexcept {
+    return m_app_configuration.get_dagsim_path();
+  }
+
+  unsigned int get_number_of_core() const noexcept { return m_number_of_cores; }
+  void set_number_of_core(unsigned int num_cors) noexcept {
+    m_number_of_cores = num_cors;
+  }
+
+  const std::map<Stage::StageID, Stage>& get_all_stages() const noexcept {
+    return m_stages;
+  }
+
+  void set_d_line(const TimeInstant& d_line) noexcept { m_d_line = d_line; }
+
+  const TimeInstant& get_d_line() const noexcept { return m_d_line; }
+
+  void set_n1(const TimeInstant& n1) noexcept { m_n1 = n1; }
+  void set_n2(const TimeInstant& n2) noexcept { m_n2 = n2; }
+  const TimeInstant& get_n1() const noexcept { return m_n1; }
+  const TimeInstant& get_n2() const noexcept { return m_n2; }
+
+  void set_weight(double w) noexcept { m_weight = w; }
+  double get_weight() const noexcept { return m_weight; }
+
  private:
   ApplicationID m_app_id;
   std::map<Job::JobID, Job> m_jobs;
@@ -74,13 +99,20 @@ class Application {
   TimeInstant m_deadline;
   TimeInstant m_real_execution_time;
 
+  TimeInstant m_d_line;
+
   std::string m_lua_filename;
   std::string m_infrastructure_filename;
 
   double m_alpha;
   double m_beta;
 
+  double m_weight;
+
   unsigned int m_number_of_cores;
+
+  TimeInstant m_n1;  // number of cores when d becomes d+delta
+  TimeInstant m_n2;  // number of cores when d becomes d-delta
 
   opt_common::InfrastructureConfiguration m_infr_config;
   opt_common::MachineLearningModel m_mlm;
