@@ -33,6 +33,15 @@ class Application {
  public:
   using ApplicationID = std::string;
 
+  struct FileResources {
+    std::string m_Application_File;
+    std::string m_Jobs_File;
+    std::string m_Stages_File;
+    std::string m_Tasks_File;
+    std::string m_Lua_File;
+    std::string m_Infrastructure_File;
+  };
+
   Application() = default;
 
   /*! Compute the approximate execution time instant.
@@ -56,6 +65,10 @@ class Application {
 
   static Application create_application(const std::string& data_input_namefile,
                                         const std::string& config_namefile);
+
+  static Application create_application(FileResources resources_filename,
+                                        std::string config_namefile,
+                                        std::string deadline_str);
 
   void set_alpha_beta(unsigned int n1, unsigned int n2);
 
@@ -89,19 +102,19 @@ class Application {
   std::map<Job::JobID, Job> m_jobs;
   std::map<Stage::StageID, Stage> m_stages;
 
-  TimeInstant m_submission_time;
-  TimeInstant m_deadline;
-  TimeInstant m_real_execution_time;
+  TimeInstant m_submission_time = 0;
+  TimeInstant m_deadline = 0;
+  TimeInstant m_real_execution_time = 0;
 
   std::string m_lua_filename;
   std::string m_infrastructure_filename;
 
-  double m_alpha;
-  double m_beta;
+  double m_alpha = 0.0;
+  double m_beta = 0.0;
 
-  double m_weight;
+  double m_weight = 0.0;
 
-  unsigned int m_number_of_cores;
+  unsigned int m_number_of_cores = 0;
 
   opt_common::InfrastructureConfiguration m_infr_config;
   opt_common::MachineLearningModel m_mlm;
@@ -153,41 +166,9 @@ inline void Application::set_alpha_beta(unsigned int n1, unsigned int n2) {
 }
 
 inline Application Application::create_application(
-    const std::string& data_input_namefile,
-    const std::string& config_namefile) {
+    FileResources resources_filename, std::string config_namefile,
+    std::string deadline_str) {
   using namespace std::string_literals;
-
-  enum class FILE_RESOURCE {
-    APPLICATION_FILE,
-    JOBS_FILE,
-    STAGES_FILE,
-    TASKS_FILE,
-    LUA_FILE,
-    INFRASTRUCTURE_FILE
-  };
-
-  // Read the input file
-  std::ifstream ifs(data_input_namefile);
-  if (!ifs) {
-    THROW_RUNTIME_ERROR("In creation application: cannot open the file '"s +
-                        data_input_namefile + "'");
-  }
-
-  // Read the line of the input file
-  std::string data_line_file;
-  std::getline(ifs, data_line_file);
-
-  // Tokenize the line and get app information
-  std::istringstream iss(data_line_file);
-  std::map<FILE_RESOURCE, std::string> resources2filename;
-  std::string deadline_str;
-  iss >> resources2filename[FILE_RESOURCE::APPLICATION_FILE];
-  iss >> resources2filename[FILE_RESOURCE::JOBS_FILE];
-  iss >> resources2filename[FILE_RESOURCE::STAGES_FILE];
-  iss >> resources2filename[FILE_RESOURCE::TASKS_FILE];
-  iss >> resources2filename[FILE_RESOURCE::LUA_FILE];
-  iss >> resources2filename[FILE_RESOURCE::INFRASTRUCTURE_FILE];
-  iss >> deadline_str;
 
   if (deadline_str.empty()) {
     THROW_RUNTIME_ERROR("In creation application: some missing information");
@@ -200,27 +181,24 @@ inline Application Application::create_application(
   app.m_app_configuration.read_configuration_from_file(config_namefile);
 
   // Add path to the file names
-  for (auto& file_pair : resources2filename) {
-    switch (file_pair.first) {
-      case FILE_RESOURCE::APPLICATION_FILE:
-      case FILE_RESOURCE::JOBS_FILE:
-      case FILE_RESOURCE::STAGES_FILE:
-      case FILE_RESOURCE::TASKS_FILE:
-      case FILE_RESOURCE::INFRASTRUCTURE_FILE:
-        file_pair.second =
-            app.m_app_configuration.get_data_path() + "/" + file_pair.second;
-        break;
-      case FILE_RESOURCE::LUA_FILE:
-        file_pair.second =
-            app.m_app_configuration.get_lua_path() + "/" + file_pair.second;
-        break;
-    }
-  }
+  resources_filename.m_Application_File =
+      app.m_app_configuration.get_data_path() + "/" +
+      resources_filename.m_Application_File;
+  resources_filename.m_Jobs_File = app.m_app_configuration.get_data_path() +
+                                   "/" + resources_filename.m_Jobs_File;
+  resources_filename.m_Stages_File = app.m_app_configuration.get_data_path() +
+                                     "/" + resources_filename.m_Stages_File;
+  resources_filename.m_Tasks_File = app.m_app_configuration.get_data_path() +
+                                    "/" + resources_filename.m_Tasks_File;
+  resources_filename.m_Infrastructure_File =
+      app.m_app_configuration.get_data_path() + "/" +
+      resources_filename.m_Infrastructure_File;
+  resources_filename.m_Lua_File = app.m_app_configuration.get_lua_path() + "/" +
+                                  resources_filename.m_Lua_File;
 
   // Set some information in application
-  app.m_lua_filename = resources2filename.at(FILE_RESOURCE::LUA_FILE);
-  app.m_infrastructure_filename =
-      resources2filename.at(FILE_RESOURCE::INFRASTRUCTURE_FILE);
+  app.m_lua_filename = resources_filename.m_Lua_File;
+  app.m_infrastructure_filename = resources_filename.m_Infrastructure_File;
   app.m_submission_time = 0;
   app.m_deadline = std::stoul(deadline_str);
   app.m_number_of_cores = 1;
@@ -228,8 +206,7 @@ inline Application Application::create_application(
   CSV_Data csv_data;
 
   // Read the app csv
-  read_csv_file(resources2filename.at(FILE_RESOURCE::APPLICATION_FILE),
-                &csv_data);
+  read_csv_file(resources_filename.m_Application_File, &csv_data);
 
   // Set the application id
   app.m_app_id = csv_data.at(1).at(0);
@@ -240,7 +217,7 @@ inline Application Application::create_application(
   app.m_real_execution_time = app_time_stop - app_time_start;
 
   // Read the jobs file
-  read_csv_file(resources2filename.at(FILE_RESOURCE::JOBS_FILE), &csv_data);
+  read_csv_file(resources_filename.m_Jobs_File, &csv_data);
 
   // For each line in csv parse it
   std::map<Job::JobID, TimeInstant> job2submission_time, job2completion_time;
@@ -254,7 +231,7 @@ inline Application Application::create_application(
     const auto row_size = row.size();
     if (row_size != 4) {
       THROW_RUNTIME_ERROR("In creation application: file '"s +
-                          resources2filename.at(FILE_RESOURCE::JOBS_FILE) +
+                          resources_filename.m_Jobs_File +
                           "' has different number of cols");
     }
 
@@ -301,7 +278,7 @@ inline Application Application::create_application(
 
   // ---------------
   // Parse the stages file
-  read_csv_file(resources2filename.at(FILE_RESOURCE::STAGES_FILE), &csv_data);
+  read_csv_file(resources_filename.m_Stages_File, &csv_data);
 
   // Fill the data structures of stages file (for each row in stages file)
   for (unsigned row_index = 1; row_index < csv_data.size(); ++row_index) {
@@ -310,7 +287,7 @@ inline Application Application::create_application(
     const auto number_of_cols = row.size();
     if (number_of_cols != 6) {
       THROW_RUNTIME_ERROR("In creation application: file '"s +
-                          resources2filename.at(FILE_RESOURCE::STAGES_FILE) +
+                          resources_filename.m_Stages_File +
                           "' has different number of cols");
     }
 
@@ -334,7 +311,7 @@ inline Application Application::create_application(
   }  // for each row in stages file
 
   // Parse the tasks file
-  read_csv_file(resources2filename.at(FILE_RESOURCE::TASKS_FILE), &csv_data);
+  read_csv_file(resources_filename.m_Tasks_File, &csv_data);
 
   // Map a ID stage with a execution times of stage2tasks
   std::map<Stage::StageID, std::vector<TimeInstant>> stage2tasks;
@@ -360,12 +337,11 @@ inline Application Application::create_application(
   }
 
   // Read the configuration file
-  std::ifstream ifs_config(
-      resources2filename.at(FILE_RESOURCE::INFRASTRUCTURE_FILE));
+  std::ifstream ifs_config(resources_filename.m_Infrastructure_File);
   if (!ifs_config) {
     THROW_RUNTIME_ERROR(
         "In creation application: cannot open the file for infrastructure '"s +
-        resources2filename.at(FILE_RESOURCE::INFRASTRUCTURE_FILE) + "'");
+        resources_filename.m_Infrastructure_File + "'");
   }
 
   // Read the second line (skip the first line -header-)
@@ -400,6 +376,36 @@ inline Application Application::create_application(
   app.m_mlm.print_dump_on_stream(&std::cout);
 
   return app;
+}
+
+inline Application Application::create_application(
+    const std::string& data_input_namefile,
+    const std::string& config_namefile) {
+  using namespace std::string_literals;
+  // Read the input file
+  std::ifstream ifs(data_input_namefile);
+  if (!ifs) {
+    THROW_RUNTIME_ERROR("In creation application: cannot open the file '"s +
+                        data_input_namefile + "'");
+  }
+
+  // Read the line of the input file
+  std::string data_line_file;
+  std::getline(ifs, data_line_file);
+
+  // Tokenize the line and get app information
+  std::istringstream iss(data_line_file);
+  FileResources resources_filename;
+  std::string deadline_str;
+  iss >> resources_filename.m_Application_File;
+  iss >> resources_filename.m_Jobs_File;
+  iss >> resources_filename.m_Stages_File;
+  iss >> resources_filename.m_Tasks_File;
+  iss >> resources_filename.m_Lua_File;
+  iss >> resources_filename.m_Infrastructure_File;
+  iss >> deadline_str;
+
+  return create_application(resources_filename, config_namefile, deadline_str);
 }
 
 }  // namespace opt_common
