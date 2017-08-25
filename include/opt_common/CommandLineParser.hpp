@@ -18,6 +18,7 @@ limitations under the License.
 #define __OPT_COMMON__COMMAND_LINE_PARSER__HPP
 #include <opt_common/helper.hpp>
 #include <string>
+#include <utility>
 
 namespace opt_common {
 
@@ -29,16 +30,16 @@ class CommandLineParser {
     std::string name_of_file;
     OptimizeMethod optimize_method;
     bool no_ml;
+    std::string config_file;
   };
 
   static CommandLineOptions parse_command_line(int argc, char** argv);
 };
 
-inline CommandLineParser::CommandLineOptions CommandLineParser::parse_command_line(
-    int argc, char** argv) {
+inline CommandLineParser::CommandLineOptions
+CommandLineParser::parse_command_line(int argc, char** argv) {
   if (argc < 3) {
     THROW_RUNTIME_ERROR("Command line parse error: missing argument");
-    exit(-1);
   }
 
   CommandLineOptions options;
@@ -48,44 +49,46 @@ inline CommandLineParser::CommandLineOptions CommandLineParser::parse_command_li
   options.name_of_file = argv[1];
 
   // Parse the optimization method
-  if (argc >= 2) {
-    std::string method_arg = argv[2];
+  std::string method_arg = argv[2];
 
-    // Clean dash before
-    auto finder = method_arg.find_first_not_of('-');
-    method_arg = method_arg.substr(finder);
+  // Clean dash before
+  auto finder = method_arg.find_first_not_of('-');
+  method_arg = method_arg.substr(finder);
 
-    // Check should be one single char
-    if (method_arg.size() != 1) {
-      THROW_RUNTIME_ERROR(
-          "Command line parse error: method expressed with mutiple characters");
-    }
-
-    const char method_char = method_arg.at(0);
-    switch (method_char) {
-      case 'f':
-      case 'F':
-        options.optimize_method = OptimizeMethod::FAST_OPTIMIZATION;
-        break;
-      case 'b':
-      case 'B':
-        options.optimize_method = OptimizeMethod::FAST_BISECT_OPTIMIZATION;
-        break;
-      default:
-        THROW_RUNTIME_ERROR(
-            "Command line parse error: Optimize method not recognized");
-    }
+  // Check should be one single char
+  if (method_arg.size() != 1) {
+    THROW_RUNTIME_ERROR(
+        "Command line parse error: method expressed with mutiple characters");
   }
 
-  // Check for --no-ml option
-  if (argc >= 4) {
-    std::string method_arg = argv[3];
+  const char method_char = method_arg.at(0);
+  switch (method_char) {
+    case 'f':
+    case 'F':
+      options.optimize_method = OptimizeMethod::FAST_OPTIMIZATION;
+      break;
+    case 'b':
+    case 'B':
+      options.optimize_method = OptimizeMethod::FAST_BISECT_OPTIMIZATION;
+      break;
+    default:
+      THROW_RUNTIME_ERROR(
+          "Command line parse error: Optimize method not recognized");
+  }
 
-    if (method_arg == "--no-ml") {
+  // Parse optional arguments (--no-ml and -c)
+  const int num_args_to_parse = argc - 3;
+  for (int i = 0; i < num_args_to_parse; ++i) {
+    std::string arg_str = argv[3 + i];
+    if (arg_str == "--no-ml") {
+      // Active no-ml
       options.no_ml = true;
+    } else if (arg_str == "-c") {
+      options.config_file = argv[3 + i + 1];
+      ++i;
     } else {
       THROW_RUNTIME_ERROR(std::string("Command line parse error: Option '" +
-                                      method_arg + "' not recognized"));
+                                      arg_str + "' not recognized"));
     }
   }
 
