@@ -97,6 +97,10 @@ class Application {
   void set_weight(double w) noexcept { m_weight = w; }
   double get_weight() const noexcept { return m_weight; }
 
+  const ApplicationID& get_application_id() const noexcept { return m_app_id; }
+
+  const FileResources& get_files_resources() const noexcept { return m_files_resources; }
+
  private:
   ApplicationID m_app_id;
   std::map<Job::JobID, Job> m_jobs;
@@ -120,6 +124,8 @@ class Application {
   opt_common::MachineLearningModel m_mlm;
 
   Configuration m_app_configuration;
+
+  FileResources m_files_resources;
 };
 
 inline TimeInstant Application::compute_avg_execution_time(
@@ -176,6 +182,9 @@ inline Application Application::create_application(
 
   // Create empty application object
   Application app;
+
+  // Set all filenames resouces
+  app.m_files_resources = resources_filename;
 
   // Read the configuration file
   app.m_app_configuration.read_configuration_from_file(config_namefile);
