@@ -25,6 +25,16 @@ namespace opt_common {
 class Configuration {
  public:
   Configuration() = default;
+
+  /*! This method parse the following file
+      CSVFILE_PATH   \n
+      DAGSIM_PATH    \n
+      LUAFILES_PATH  \n
+      [OPT_IC_BINARY \n
+       [TEMPORARY_DIRECTORY]]
+
+      Note [] means OPTIONAL.
+   */
   void read_configuration_from_file(const std::string& filename);
 
   const std::string& get_data_path() const noexcept { return m_data_path; }
@@ -33,10 +43,18 @@ class Configuration {
 
   const std::string& get_dagsim_path() const noexcept { return m_dagsim_path; }
 
+  const std::string& get_opt_command() const noexcept { return m_opt_command; }
+
+  const std::string& get_tmp_directory() const noexcept {
+    return m_tmp_directory;
+  }
+
  private:
   std::string m_data_path;
-  std::string m_lua_path;
   std::string m_dagsim_path;
+  std::string m_lua_path;
+  std::string m_opt_command;
+  std::string m_tmp_directory;
 };
 
 inline void Configuration::read_configuration_from_file(
@@ -49,7 +67,43 @@ inline void Configuration::read_configuration_from_file(
                         filename + "'");
   }
 
-  file >> m_data_path >> m_dagsim_path >> m_lua_path;
+  std::string line;
+
+  // Get the first line (not optional - CSV path)
+  std::getline(file, line);
+  if (line.empty()) {
+    THROW_RUNTIME_ERROR("The first line in the configuration file ('" +
+                        filename + "') should not be empty");
+  }
+  m_data_path = std::move(line);
+
+  // Get the second line (not optional - Datgim path)
+  std::getline(file, line);
+  if (line.empty()) {
+    THROW_RUNTIME_ERROR("The second line in the configuration file ('" +
+                        filename + "') should not be empty");
+  }
+  m_dagsim_path = std::move(line);
+
+  // Get the third line (not optional - Lua files path)
+  std::getline(file, line);
+  if (line.empty()) {
+    THROW_RUNTIME_ERROR("The third line in the configuration file ('" +
+                        filename + "') should not be empty");
+  }
+  m_lua_path = std::move(line);
+
+  // Get the fourth line (optional - OPT_IC binary)
+  std::getline(file, line);
+  if (!line.empty()) {
+    m_opt_command = std::move(line);
+
+    // Get the fiveth line (optional - temp directory)
+    std::getline(file, line);
+    if (!line.empty()) {
+      m_tmp_directory = std::move(line);
+    }
+  }
 }
 
 }  // namespace opt_common

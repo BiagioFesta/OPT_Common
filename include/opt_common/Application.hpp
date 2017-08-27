@@ -33,6 +33,7 @@ class Application {
  public:
   using ApplicationID = std::string;
 
+  //! Only file name without absolute path
   struct FileResources {
     std::string m_Application_File;
     std::string m_Jobs_File;
@@ -61,6 +62,7 @@ class Application {
 
   std::size_t compute_max_number_of_task() const noexcept;
 
+  //! \return the absolute lua filename (with absolute path)
   const std::string& get_lua_name() const noexcept { return m_lua_filename; }
 
   static Application create_application(const std::string& data_input_namefile,
@@ -99,6 +101,7 @@ class Application {
 
   const ApplicationID& get_application_id() const noexcept { return m_app_id; }
 
+  //! \note FileResources have not absolute path
   const FileResources& get_files_resources() const noexcept { return m_files_resources; }
 
  private:
