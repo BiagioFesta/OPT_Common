@@ -16,13 +16,13 @@ limitations under the License.
 
 #ifndef __OPT_COMMON__HELPER__HPP
 #define __OPT_COMMON__HELPER__HPP
+#include <algorithm>
 #include <cstdint>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 #define THROW_RUNTIME_ERROR(message) throw std::runtime_error(message)
 
@@ -58,6 +58,10 @@ inline void read_csv_file(const std::string& csv_namefile,
 
   std::string line;
   while (std::getline(file, line)) {
+    // Remove all '\r' from line
+    const auto new_end = std::remove(line.begin(), line.end(), '\r');
+    line.erase(new_end, line.end());
+
     CSV_Line csv_row;
 
     // Scan for value in line
@@ -130,12 +134,14 @@ typename std::vector<T>::difference_type compute_maxmin_get_index_impl(
 }
 
 template <typename T>
-typename std::vector<T>::difference_type compute_max_get_index(const std::vector<T>& v) {
+typename std::vector<T>::difference_type compute_max_get_index(
+    const std::vector<T>& v) {
   return compute_maxmin_get_index_impl(v, true);
 }
 
 template <typename T>
-typename std::vector<T>::difference_type compute_min_get_index(const std::vector<T>& v) {
+typename std::vector<T>::difference_type compute_min_get_index(
+    const std::vector<T>& v) {
   return compute_maxmin_get_index_impl(v, false);
 }
 
