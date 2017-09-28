@@ -28,7 +28,7 @@ limitations under the License.
 
 namespace opt_common {
 
-using TimeInstant = std::uint64_t;
+using TimeInstant = double;
 
 using CSV_Line = std::vector<std::string>;
 using CSV_Data = std::vector<CSV_Line>;
